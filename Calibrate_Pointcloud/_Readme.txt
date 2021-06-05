@@ -1,0 +1,1 @@
+This code calibrates a camera setup from a Davis generated .xml file.

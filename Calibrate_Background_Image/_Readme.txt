@@ -1,0 +1,1 @@
+This code patches a simple background image to remove background artifacts and un-desired gradients.

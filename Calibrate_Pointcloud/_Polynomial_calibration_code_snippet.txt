@@ -1,0 +1,64 @@
+function Cmap=load_calibration
+%load calibration notes here
+
+%% Load or create data (takes some time)
+obj=xmlread([!!!,'/MarkPositionTable.xml']);
+obj=xml2struct(obj); %file exchange
+
+Cmark=zeros(5,0);
+for c=1:length(obj.MarkTable.Camera)
+    for v=1:length(obj.MarkTable.Camera{c}.View)
+        for m=1:length(obj.MarkTable.Camera{c}.View{v}.Mark)
+            
+            % image coord
+            x=str2double(obj.MarkTable.Camera{c}.View{v}.Mark{m}.RawPos.Attributes.x);
+            y=str2double(obj.MarkTable.Camera{c}.View{v}.Mark{m}.RawPos.Attributes.y);
+            
+            % object space
+            X=str2double(obj.MarkTable.Camera{c}.View{v}.Mark{m}.FittedWorldPos.Attributes.x);
+            Y=str2double(obj.MarkTable.Camera{c}.View{v}.Mark{m}.FittedWorldPos.Attributes.y);
+            Z=str2double(obj.MarkTable.Camera{c}.View{v}.Mark{m}.FittedWorldPos.Attributes.z);
+            
+            % write marks
+            Cmark=cat(2,Cmark,[c x+1 y+1 X Y Z]');
+            
+        end
+    end
+end
+
+%% make mapping
+syms x y z
+
+% intiate
+Cmap=cell(1,max(Cmark(1,:)));%sym('m',[2,max(Cmark.Data.dot(1,:))]);
+
+% loop camera
+for c=unique(Cmark(1,:))
+    
+    C=Cmark(1,:)==c;
+    
+    % known polynomial eval
+    X=[1 ... %c_0
+        Cmark(4,C)' Cmark(5,C)' Cmark(6,C)' ... % c_x c_y c_z 
+        Cmark(4,C)'.^2 Cmark(5,C)'.^2 Cmark(6,C)'.^2 ... % c_xx c_yy c_zz 
+        Cmark(4,C)'.*Cmark(5,C) Cmark(5,C)'.*Cmark(6,C) Cmark(4,C)'.*Cmark(6,C) ... % c_xy c_yz c_xz 
+        %hot Cmark(4,C)'.*Cmark(5,C).*Cmark(6,C) % c_xyz
+        ];
+    
+    % TO BE CHECKED
+    ox=[0 1 0 0 2 0 0 1 0 1];% order polynomial in x
+    oy=[0 0 1 0 0 2 0 1 1 0];% order polynomial in x
+    oz=[0 0 0 1 0 0 2 0 1 1];% order polynomial in x
+
+    %make mapping x
+    m_x=regress(Cmark(2,C)',X);
+    m_y=regress(Cmark(3,C)',X);
+    
+    %coef
+    coef=[m_x ; m_y]; %TO BE CHECKED
+    
+    Cmap{c}=matlabFunction(coef*((x.^ox').*(y.^oy').*(z.^oz')));
+    
+end
+
+end
