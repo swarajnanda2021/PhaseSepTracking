@@ -15,6 +15,7 @@ Time=fload([folder date rec vsl 'Postproc3DTracking' vsl 'Trajectories' vsl 'Tim
 Pos=fload([folder date rec vsl 'Postproc3DTracking' vsl 'Trajectories' vsl 'Position.dat']); % just positions of particles
 Quadric_axes = fload([folder date rec vsl 'Postproc3DTracking' vsl 'Trajectories' vsl 'EllipsoidAxis.dat']); % Particle quadrics
 Accuracy = fload([folder date rec vsl 'Postproc3DTracking' vsl 'Trajectories' vsl 'Accuracy.dat']); % Particle quadrics
+Velocity=fload([folder date rec vsl 'Postproc3DTracking' vsl 'Trajectories' vsl 'Velocity.dat']); % just positions of particles
 FitRes = fload([folder date rec vsl 'Postproc3DTracking' vsl 'Trajectories' vsl 'FitResidual.dat']); % Polyfit residuals
 %% Uncertainty of the polynomial fit
 
@@ -120,6 +121,45 @@ end
 disp('Finished calculated real/ghost particle density')
 
 
+%% Further remove spurious tracks
+
+if 1
+    Tr_outl = zeros(1,0);
+    for n=post.tproc(1):post.tproc(2)
+        n
+
+        % find all tracks for tstep n
+        N_t = ismember(Index(1,:),unique(Index(1,Index(2,:)==n)));
+        
+        % In this outlier removal code, we do not care so much about
+        % accuracy, we only want to remove non-vortical tracks.
+        % Calculate u_theta
+        uthta = (Velocity(1,N_t).^2 + Velocity(2,N_t).^2).^0.5;
+        % detect outlier by standard 3 sigma thresholding (as ghost tracks
+        % are less than 1%, this is justified)
+        uthta_outl = isoutlier(uthta,'mean');
+        
+        tr_outl = unique(Index(1,uthta_outl));
+        
+        
+        Tr_outl = cat(2,Tr_outl,tr_outl);
+        
+        if 0
+            figure(1)
+            hold all
+            histogram(uthta,'normalization','pdf')
+            histogram(uthta(~isoutlier(uthta,'mean')),'normalization','pdf')
+        end
+        
+        
+    end
+    
+    Tr_outl = unique(Tr_outl);
+end
+
+
+
+
 %% Plot Ghost particle probability
 if 1
     
@@ -147,7 +187,9 @@ if 1
     
 end
 
+%% Add outliers after estimating ghost track density
 
+t_spurious = [t_spurious Tr_outl];
 
 %% Calculation of the theoretical Probability Density Function 
 
@@ -335,30 +377,36 @@ end
 % unc_displacement 
 %      = FitRes + Accuracy.*Quadric_axes + ((Quadric_axes) - 0.05 + 0.01);
 
-unc_displacement = repmat(FitRes,3,1)  + ((Quadric_axes) - 0.05 + 0.01) + Accuracy.*Quadric_axes;
+% unc_displacement = repmat(FitRes,3,1)  + ((Quadric_axes) - 0.05 + 0.01) + Accuracy.*Quadric_axes;
+unc_displacement = mean((Quadric_axes) - 0.05 + 0.005) + mean(Accuracy.*Quadric_axes);
 
 figure(51)
-
 subplot(2,1,1)
 hold on
 histogram((unc_displacement(1,:)./(1/5000))./1000,'FaceColor','r','EdgeColor','none')
-histogram((unc_displacement(2,:)./(1/5000))./1000,'FaceColor','b','EdgeColor','none')
-histogram((unc_displacement(3,:)./(1/5000))./1000,'FaceColor','g','EdgeColor','none')
+% histogram((unc_displacement(2,:)./(1/5000))./1000,'FaceColor','b','EdgeColor','none')
+% histogram((unc_displacement(3,:)./(1/5000))./1000,'FaceColor','g','EdgeColor','none')
 ylabel('[\#]','interpreter','latex','fontsize',20)
 xlabel('$\epsilon_{U}$ (m/sec)','interpreter','latex','fontsize',20)
-legend('$\epsilon_{Ux}$','$\epsilon_{Uy}$','$\epsilon_{Uz}$','interpreter','latex','fontsize',20)
+% legend('$\epsilon_{U}$','interpreter','latex','fontsize',20)
 xlim([0 1.5])
 box on
 set(gca,'linewidth',1)
 hold off
 
 subplot(2,1,2)
-histogram((vecnorm(unc_displacement)./(1/5000))./1000,'FaceColor','r','EdgeColor','none')
+hold on
+histogram((unc_displacement(1,:)),'FaceColor','r','EdgeColor','none')
+% histogram((unc_displacement(2,:)./(1/5000))./1000,'FaceColor','b','EdgeColor','none')
+% histogram((unc_displacement(3,:)./(1/5000))./1000,'FaceColor','g','EdgeColor','none')
 ylabel('[\#]','interpreter','latex','fontsize',20)
-xlabel('$\epsilon_{U}$ (m/sec)','interpreter','latex','fontsize',20)
-xlim([0.5 2])
+xlabel('$\epsilon_{disp}$ (mm)','interpreter','latex','fontsize',20)
+% legend('$\epsilon_{disp}$','interpreter','latex','fontsize',20)
+xlim([0 0.2])
 box on
 set(gca,'linewidth',1)
+hold off
+
 
 saveas(gcf,[folder date rec vsl 'Postproc3DTracking' vsl 'velocity_error.fig'])
    
