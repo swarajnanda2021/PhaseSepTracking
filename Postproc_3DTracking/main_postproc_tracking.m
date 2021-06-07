@@ -54,7 +54,7 @@ if 1
     postproc_trajectories % traj
 end
 
-%% Track-quality analysis (also detects ghost track indices from inside the cavity)
+%% Track-quality analysis (also removes outliers)
 if 1
    postproc_trackqualitymetric 
 end
