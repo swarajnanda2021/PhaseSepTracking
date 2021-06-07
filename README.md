@@ -5,4 +5,6 @@ Based on the fish tracking algorithm developed by K. Muller (https://gitlab.tude
 
 The present tracking code has been adjusted to high particle displacements, necessary in order to ensure that the displacement measurement is accurate. 
 
+Requires pre-trained CNN model for vortex-cavity image segmentation
+
 
