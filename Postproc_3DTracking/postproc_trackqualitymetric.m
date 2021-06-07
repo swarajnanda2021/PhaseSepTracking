@@ -127,30 +127,60 @@ if 1
     Tr_outl = zeros(1,0);
     for n=post.tproc(1):post.tproc(2)
         n
-
+        % Load centroid data
+        load([folder date rec vsl 'Preproc3DReco' vsl 'VisualHull' vsl 'tstep_' num2str(n) '.mat'],'Centroid_cav')
+        new_axis = [nanmean(Centroid_cav(1,:)) nanmean(Centroid_cav(2,:))];
+       
         % find all tracks for tstep n
         N_t = ismember(Index(1,:),unique(Index(1,Index(2,:)==n)));
         
         % In this outlier removal code, we do not care so much about
         % accuracy, we only want to remove non-vortical tracks.
         % Calculate u_theta
-        uthta = (Velocity(1,N_t).^2 + Velocity(2,N_t).^2).^0.5;
-        % detect outlier by standard 3 sigma thresholding (as ghost tracks
-        % are less than 1%, this is justified)
-        uthta_outl = isoutlier(log(uthta));
+        r       = ((Pos(1,N_t)-new_axis(2)).^2 + (Pos(2,N_t)-new_axis(1)).^2).^0.5;
+        theta   = atan2((Pos(2,N_t)-new_axis(1)),(Pos(1,N_t)-new_axis(2)));
         
-        tr_outl = unique(Index(1,uthta_outl));
+        ur      = Velocity(2,N_t).*sin(theta) + Velocity(1,N_t).*cos(theta);
+        utheta  = -Velocity(1,N_t).*sin(theta)./r + Velocity(2,N_t).*cos(theta)./r;
         
+        % find obvious outliers
+        neg_utht = utheta<0.5; % chosen for this work
+        big_ur   = abs(ur)>1000; % chosen for this work, 0.5m/sec is the incertainty
+              
         
-        Tr_outl = cat(2,Tr_outl,tr_outl);
+        pos1=Pos(1,N_t);
+        pos2=Pos(2,N_t);
+        vel1=Velocity(1,N_t);
+        vel2=Velocity(2,N_t);
         
+%         pause
         if 0
             figure(1)
             hold all
-            histogram((uthta),'normalization','pdf')
-            histogram(uthta(~uthta_outl),'normalization','pdf')
-%             pause
+            histogram(utheta,'normalization','pdf')
+            histogram(utheta(~isoutlier(utheta,2)),'normalization','pdf')
         end
+        if 0
+            figure(1)
+            hold all
+            quiver(Pos(1,N_t)-new_axis(2),Pos(2,N_t)-new_axis(1),Velocity(1,N_t),Velocity(2,N_t))
+            quiver(pos1(neg_utht|big_ur),pos2(neg_utht|big_ur),vel1(neg_utht|big_ur),vel2(neg_utht|big_ur))
+        end
+        
+        if 1
+            
+            figure(1)
+            quiver(pos1(~(neg_utht|big_ur)),pos2(~(neg_utht|big_ur)),vel1(~(neg_utht|big_ur)),vel2(~(neg_utht|big_ur)))
+            
+        end
+        
+        tr_outl = neg_utht|big_ur;       
+        
+        tracks = Index(1,N_t);
+        track_outl = tracks(tr_outl);
+        
+        
+        Tr_outl = cat(2,Tr_outl,unique(track_outl));
         
         
     end
@@ -190,7 +220,7 @@ end
 
 %% Add outliers after estimating ghost track density
 
-t_spurious = [t_spurious Tr_outl];
+t_spurious = unique([t_spurious Tr_outl]);
 
 %% Calculation of the theoretical Probability Density Function 
 
