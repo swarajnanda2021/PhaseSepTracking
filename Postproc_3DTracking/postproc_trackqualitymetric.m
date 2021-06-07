@@ -137,7 +137,7 @@ if 1
         uthta = (Velocity(1,N_t).^2 + Velocity(2,N_t).^2).^0.5;
         % detect outlier by standard 3 sigma thresholding (as ghost tracks
         % are less than 1%, this is justified)
-        uthta_outl = isoutlier(uthta,'mean');
+        uthta_outl = isoutlier(log(uthta));
         
         tr_outl = unique(Index(1,uthta_outl));
         
@@ -147,8 +147,9 @@ if 1
         if 0
             figure(1)
             hold all
-            histogram(uthta,'normalization','pdf')
-            histogram(uthta(~isoutlier(uthta,'mean')),'normalization','pdf')
+            histogram((uthta),'normalization','pdf')
+            histogram(uthta(~uthta_outl),'normalization','pdf')
+%             pause
         end
         
         
