@@ -167,7 +167,7 @@ if 1
             quiver(pos1(neg_utht|big_ur),pos2(neg_utht|big_ur),vel1(neg_utht|big_ur),vel2(neg_utht|big_ur))
         end
         
-        if 1
+        if 0
             
             figure(1)
             quiver(pos1(~(neg_utht|big_ur)),pos2(~(neg_utht|big_ur)),vel1(~(neg_utht|big_ur)),vel2(~(neg_utht|big_ur)))
@@ -221,25 +221,10 @@ end
 %% Add outliers after estimating ghost track density
 
 t_spurious = unique([t_spurious Tr_outl]);
+indices = ~ismember(Index(1,:),t_spurious); 
+   
 
 %% Calculation of the theoretical Probability Density Function 
-
-% Current state of derivation: Prob(L>=Nf) = Prob(L>=Nf)_jerry * Prob(Not Ghost) * Prob(Not occluded)
-if 0
-    % Take average of all occlusion rates
-    avg_occlusion = sum(Occlusion_ratio,2)/size(Occlusion_ratio,2);
-    % Triangulation possibilities
-    triang_perms = nchoosek(1:5,3);
-    % probability of occlusion by 3-focal set
-    trifocal_nonocclusion = mean(prod(1 - avg_occlusion(triang_perms),2)); % averaged over each trifocal set as they are independent
-
-
-    Prob_not_occluded = trifocal_nonocclusion;
-
-
-
-    Prob_not_ghost = 1 - mean(Prob_ghost);
-end
 
 
 Nf=1:50;
@@ -268,8 +253,8 @@ Cpln = fload([folder date rec vsl 'Preproc3DTracking' vsl 'Cpln.dat']);
 indIdentPlink = ismember(Index,Plink(1,:)); % From track indices, find identification index
 Pobj=fload([folder date rec vsl 'Preproc3DTracking' vsl 'Pobj.dat']); % second row is time, first row is index
 %%
-% Long tracks
-l = unique(Index(1,:));
+% Long tracks, without duplicates
+l = unique(Index(1,indices));
 L=histcounts(Index(1,:),[l-1/2,max(l)+1/2]);
 L2=histcounts(L,1:30);
 
@@ -279,7 +264,7 @@ end
 
 
 
-% Long tracks
+% Long tracks, ITS RAW!! (in gordon ramsay's voice)
 [~,ia,~]=unique(Pobj([1 2],:)','rows');
 l22=unique(Pobj(1,ia));
 L22=histcounts(Pobj(1,ia),[l22-1/2,max(l22)+1/2]);
@@ -288,6 +273,7 @@ L222=histcounts(L22,1:30);
 for iii=1:length(L222)
     Prob_exp_raw(iii) = sum(L222(iii:end))/sum(L222);
 end
+
 
 
 % Prob_exp = L2./L2(1);
@@ -306,7 +292,7 @@ if 1
     
     xlabel('$N_f$','interpreter','latex','fontsize',20)
     ylabel('Prob($L\geq N_f$)','interpreter','latex','fontsize',20)
-    legend('Raw tracks','Processed tracks','interpreter','latex','fontsize',20)
+    legend('Raw','Processed','interpreter','latex','fontsize',20)
     box on
     xlim([1 30])
     saveas(gcf,[folder date rec vsl 'Postproc3DTracking' vsl 'Track_quality.fig'])
@@ -322,9 +308,9 @@ if 1
     
    figure(2)
    hold all
-   histogram(Quadric_axes(1,:),'FaceColor','r','EdgeColor','none')
-   histogram(Quadric_axes(2,:),'FaceColor','b','EdgeColor','none')
-   histogram(Quadric_axes(3,:),'FaceColor','g','EdgeColor','none')
+   histogram(Quadric_axes(1,indices),'FaceColor','r','EdgeColor','none')
+   histogram(Quadric_axes(2,indices),'FaceColor','b','EdgeColor','none')
+   histogram(Quadric_axes(3,indices),'FaceColor','g','EdgeColor','none')
    ylabel('[\#]','interpreter','latex','fontsize',20)
    xlabel('Particle axis length ($mm$)','interpreter','latex','fontsize',20)
    xlim([ 0 0.25])
@@ -336,9 +322,9 @@ if 1
    
    figure(21)
    hold all
-   histogram(Quadric_axes(1,:)-0.05,'FaceColor','r','EdgeColor','none')
-   histogram(Quadric_axes(2,:)-0.05,'FaceColor','b','EdgeColor','none')
-   histogram(Quadric_axes(3,:)-0.05,'FaceColor','g','EdgeColor','none')
+   histogram(Quadric_axes(1,indices)-0.05,'FaceColor','r','EdgeColor','none')
+   histogram(Quadric_axes(2,indices)-0.05,'FaceColor','b','EdgeColor','none')
+   histogram(Quadric_axes(3,indices)-0.05,'FaceColor','g','EdgeColor','none')
    ylabel('[\#]','interpreter','latex','fontsize',20)
    xlabel('Particle size error ($mm$)','interpreter','latex','fontsize',20)
    xlim([ -0.1 0.25])
@@ -348,12 +334,12 @@ if 1
    box on
    saveas(gcf,[folder date rec vsl 'Postproc3DTracking' vsl 'Object_size_uncertainty.fig'])
    
-   unc_size.bias.x = mean(Quadric_axes(1,:)-0.05)+0.01; % add 10 micron standard deviation uncertainty
-   unc_size.bias.y = mean(Quadric_axes(2,:)-0.05)+0.01; % add 10 micron standard deviation uncertainty
-   unc_size.bias.z = mean(Quadric_axes(3,:)-0.05)+0.01; % add 10 micron standard deviation uncertainty
-   unc_size.random.x = std(Quadric_axes(1,:)-0.05)+0.01; % add 10 micron standard deviation uncertainty
-   unc_size.random.y = std(Quadric_axes(2,:)-0.05)+0.01; % add 10 micron standard deviation uncertainty
-   unc_size.random.z = std(Quadric_axes(3,:)-0.05)+0.01; % add 10 micron standard deviation uncertainty
+   unc_size.bias.x = mean(Quadric_axes(1,indices)-0.05)+0.01; % add 10 micron standard deviation uncertainty
+   unc_size.bias.y = mean(Quadric_axes(2,indices)-0.05)+0.01; % add 10 micron standard deviation uncertainty
+   unc_size.bias.z = mean(Quadric_axes(3,indices)-0.05)+0.01; % add 10 micron standard deviation uncertainty
+   unc_size.random.x = std(Quadric_axes(1,indices)-0.05)+0.01; % add 10 micron standard deviation uncertainty
+   unc_size.random.y = std(Quadric_axes(2,indices)-0.05)+0.01; % add 10 micron standard deviation uncertainty
+   unc_size.random.z = std(Quadric_axes(3,indices)-0.05)+0.01; % add 10 micron standard deviation uncertainty
    
    
 %    
@@ -369,14 +355,14 @@ if 1
    figure(5)
    hold all
    histogram(Pobj(17,:),'FaceColor','k','EdgeColor','none')
-   histogram(Accuracy,'FaceColor','b','EdgeColor','none')
+   histogram(Accuracy(indices),'FaceColor','b','EdgeColor','none')
    ylabel('[\#]','interpreter','latex','fontsize',20)
    xlabel('$\epsilon^*_{reproj}$','interpreter','latex','fontsize',20)
    legend('$\epsilon^*_{reproj}$ (raw)','$\epsilon^*_{reproj}$ (processed)','interpreter','latex','fontsize',20)
 %    set(gca,'xscale','log')
-   vline(exp(mean(log(Accuracy))),'b-')
-   vline(exp(mean(log(Accuracy))+2*std(log(Accuracy))),'b--')
-   vline(exp(mean(log(Accuracy))-2*std(log(Accuracy))),'b--')
+   vline(exp(mean(log(Accuracy(indices)))),'b-')
+   vline(exp(mean(log(Accuracy(indices)))+2*std(log(Accuracy(indices)))),'b--')
+   vline(exp(mean(log(Accuracy(indices)))-2*std(log(Accuracy(indices)))),'b--')
    
    vline(exp(mean(log(Pobj(17,:)))),'k-')
    vline(exp(mean(log(Pobj(17,:)))+2*std(log(Pobj(17,:)))),'k--')
@@ -387,9 +373,9 @@ if 1
    saveas(gcf,[folder date rec vsl 'Postproc3DTracking' vsl 'reproj_error.fig'])
    
    % save bias error and 2-sigma bounds of random error
-   unc_reproj.bias = exp(mean(log(Accuracy)));
-   unc_reproj.random.low = exp(mean(log(Accuracy))-2*std(log(Accuracy)));
-   unc_reproj.random.high = exp(mean(log(Accuracy))+2*std(log(Accuracy)));
+   unc_reproj.bias = exp(mean(log(Accuracy(indices))));
+   unc_reproj.random.low = exp(mean(log(Accuracy(indices)))-2*std(log(Accuracy(indices))));
+   unc_reproj.random.high = exp(mean(log(Accuracy(indices)))+2*std(log(Accuracy(indices))));
    
 end
 
@@ -409,7 +395,7 @@ end
 %      = FitRes + Accuracy.*Quadric_axes + ((Quadric_axes) - 0.05 + 0.01);
 
 % unc_displacement = repmat(FitRes,3,1)  + ((Quadric_axes) - 0.05 + 0.01) + Accuracy.*Quadric_axes;
-unc_displacement = mean((Quadric_axes) - 0.05 + 0.005) + mean(Accuracy.*Quadric_axes);
+unc_displacement = mean((Quadric_axes(:,indices)) - 0.05 + 0.005) + mean(Accuracy(indices).*Quadric_axes(:,indices));
 
 figure(51)
 subplot(2,1,1)
