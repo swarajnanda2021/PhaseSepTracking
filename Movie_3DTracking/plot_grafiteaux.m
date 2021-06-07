@@ -23,17 +23,22 @@ for ii=1:length(vec_files)
 %     
     
     r(ii,:,:) = (data.pos_accum_mat_cc(1,:,:).^2+data.pos_accum_mat_cc(2,:,:).^2).^0.5;
+    theta(ii,:,:) = atan2(data.pos_accum_mat_cc(2,:,:),data.pos_accum_mat_cc(1,:,:));
     z(ii,:,:) = data.pos_accum_mat_cc(3,:,:);
     u_theta(ii,:,:)= (data.vec_accum_mat_cc(1,:,:).^2+data.vec_accum_mat_cc(2,:,:).^2).^0.5;
     u_z(ii,:,:) = data.vec_accum_mat_cc(3,:,:);
+     
+%     ur      = data.vec_accum_mat_cc(2,:,:).*sin(theta) + data.vec_accum_mat_cc(1,:,:).*cos(theta);
+    utheta(ii,:,:)  = -data.vec_accum_mat_cc(1,:,:).*sin(theta(ii,:,:))./r(ii,:,:) + data.vec_accum_mat_cc(2,:,:).*cos(theta(ii,:,:))./r(ii,:,:);
+
     
 end
 
 radius = r(:);
 tangvel = u_theta(:);
 
-bin_radius = [2:1.5:25];
-[~, binidx] = histcounts(radius, bin_radius );
+bin_radius = 0.5:2.5:25;
+[~,~,binidx] = histcounts(radius, bin_radius );
 
 pos_data = z(:);
 utheta_mean = [];
@@ -45,7 +50,6 @@ for i=1:length(dum)
     dumI = ismember(binidx,dum(i));
     for j=1:length(dumz)
         j
-        
         dumJ = ismember(pos_data(:),dumz(j));
         
         utheta_mean(i,j) = nanmean(tangvel(dumI&dumJ));
@@ -61,8 +65,8 @@ if 1
         figure(1)
         hold all
 %         errorbar(bin_radius./6.5,utheta_mean(:,i).*0.001./1.35,utheta_std(:,i).*0.001./1.35)
-        plot3(dumz(i)*ones(size(bin_radius(2:end))),(bin_radius(1:end-1)+ 0.5*(bin_radius(2)-bin_radius(1))   )./6.5,utheta_mean(2:end,i).*0.001./1.35)
-        ylabel('$r/r_v$','interpreter','latex','fontsize',20)
+        plot3(dumz(i)*ones(size(bin_radius(2:end))),(bin_radius(1:end-1)+ 0.5*(bin_radius(2)-bin_radius(1))   ),utheta_mean(2:end,i).*0.001)
+        ylabel('$r$','interpreter','latex','fontsize',20)
         xlabel('$z$','interpreter','latex','fontsize',20)
         zlabel('$u_\theta/u_\theta(r_v)$','interpreter','latex','fontsize',20)
         xlim([0 30])
@@ -78,7 +82,7 @@ if 1
     hold all
     plot((bin_radius(1:end-1)+ 0.5*(bin_radius(2)-bin_radius(1))   ),mean(utheta_mean(2:end,:)').*0.001)
 %         plot3(dumz(i)*ones(size(bin_radius)),bin_radius./6.5,utheta_mean(:,i).*0.001./1.35)
-    ylabel('$r/r_v$','interpreter','latex','fontsize',20)
+    ylabel('$r$','interpreter','latex','fontsize',20)
     xlabel('$z$','interpreter','latex','fontsize',20)
     zlabel('$u_\theta/u_\theta(r_v)$','interpreter','latex','fontsize',20)
     xlim([0 30])
