@@ -20,13 +20,13 @@ Mset_lamboseen = [];
 
 for tstep= min(Mset(3,:)):max(Mset(3,:))
     
-    
+    tstep
     idxmset = Mset(3,:)==tstep;
     mset = Mset(:,idxmset==1);
 
 
     % segregate particles near the centre
-    exclusion_width = -15;
+    exclusion_width = -10;
     mset_outer = (mset(5,:)<exclusion_width) +  (mset(5,:)>-exclusion_width) + (mset(6,:)<exclusion_width) + (mset(6,:)>-exclusion_width);
 
     mset=mset(:,mset_outer==1 | mset_outer==2);
@@ -104,19 +104,27 @@ for tstep= min(Mset(3,:)):max(Mset(3,:))
     % with the one retrieved from the volume carving section
     
      % Load visual hull and estimate axis
-    load([folder date rec vsl 'Preproc3DReco' vsl 'VisualHull' vsl 'tstep_' num2str(tstep) '.mat'],'Vox_int','X_vox', 'Y_vox', 'Z_vox')
+    load([folder date rec vsl 'Preproc3DReco' vsl 'VisualHull' vsl 'tstep_' num2str(tstep) '.mat'],'Centroid_cav')
     % Reshape 3D matrix to 2D with transverse dimensions squashed    
-    reshp_Vox_int = reshape(Vox_int,size(Vox_int,1)*size(Vox_int,2),size(Vox_int,3)); % Intensity
-    reshp_X_Vox = reshape(X_vox,size(Vox_int,1)*size(Vox_int,2),size(Vox_int,3)); % X-coordinate
-    reshp_Y_Vox = reshape(Y_vox,size(Vox_int,1)*size(Vox_int,2),size(Vox_int,3)); % Y-coordinate
+%     reshp_Vox_int = reshape(Vox_int,size(Vox_int,1)*size(Vox_int,2),size(Vox_int,3)); % Intensity
+%     reshp_X_Vox = reshape(X_vox,size(Vox_int,1)*size(Vox_int,2),size(Vox_int,3)); % X-coordinate
+%     reshp_Y_Vox = reshape(Y_vox,size(Vox_int,1)*size(Vox_int,2),size(Vox_int,3)); % Y-coordinate
+%     
+%     % Add X and Y coordinate matrices
+%     Centroid_cav = [ [sum(reshp_X_Vox.*reshp_Vox_int,1) ; sum(reshp_Y_Vox.*reshp_Vox_int,1)]./sum(reshp_Vox_int,1) ; squeeze(Z_vox(1,1,:))'];
+%     
+%     Centroid_cav = Centroid_cav';
     
-    % Add X and Y coordinate matrices
-    Centroid_cav = [ [sum(reshp_X_Vox.*reshp_Vox_int,1) ; sum(reshp_Y_Vox.*reshp_Vox_int,1)]./sum(reshp_Vox_int,1) ; squeeze(Z_vox(1,1,:))'];
+   
     
-    
-    
-    % Calculate unit vector from first and last points
     new_axis = abs(Centroid_cav(:,1) - Centroid_cav(:,end))./norm(Centroid_cav(:,1) - Centroid_cav(:,end));
+    
+    if isnan(new_axis)
+        % Calculate unit vector from first and last points
+        new_axis = nanmean((Centroid_cav(:,2:end) - Centroid_cav(:,1:end-1))') ./ norm(nanmean((Centroid_cav(:,2:end) - Centroid_cav(:,1:end-1))'));
+    
+    end
+    
     % Replace in axang_rep
     axang_rep(1) = new_axis(2);
     axang_rep(2) = new_axis(1);
