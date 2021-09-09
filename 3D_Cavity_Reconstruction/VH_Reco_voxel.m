@@ -165,7 +165,7 @@ for tstep=ctrl.tproc(1):ctrl.tproc(2)
 
 
                 if 0 
-                    figure(69)
+                    figure(100)
                     hold all
                     imshowpair(edge(Im1),Img_stack,'ColorChannel','red-cyan')
 
